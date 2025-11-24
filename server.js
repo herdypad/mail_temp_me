@@ -25,6 +25,9 @@ app.use(express.static('public'));
 const emails = new Map(); // { id: { data, timestamp } }
 const emailBoxes = new Map(); // { email: { emails: [], timestamp } }
 
+// Storage untuk paste dengan TTL
+const pastes = new Map(); // { id: { title, content, createdAt, timestamp } }
+
 // Generate random email
 function generateRandomEmail() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -67,7 +70,15 @@ function cleanupExpiredEmails() {
     }
   }
   
-  console.log(`Cleanup completed. Active emails: ${emails.size}, Active boxes: ${emailBoxes.size}`);
+  // Cleanup pastes
+  for (const [id, data] of pastes.entries()) {
+    if (now - data.timestamp > retentionMs) {
+      pastes.delete(id);
+      console.log(`Deleted expired paste: ${id}`);
+    }
+  }
+  
+  console.log(`Cleanup completed. Active emails: ${emails.size}, Active boxes: ${emailBoxes.size}, Active pastes: ${pastes.size}`);
 }
 
 // Run cleanup every hour
@@ -81,7 +92,8 @@ function getMemoryStats() {
     heapTotal: Math.round(used.heapTotal / 1024 / 1024 * 100) / 100,
     heapUsed: Math.round(used.heapUsed / 1024 / 1024 * 100) / 100,
     emailCount: emails.size,
-    emailBoxCount: emailBoxes.size
+    emailBoxCount: emailBoxes.size,
+    pasteCount: pastes.size
   };
 }
 
@@ -213,6 +225,69 @@ app.delete('/api/emails/:emailAddress', (req, res) => {
     success: true, 
     message: 'Semua email berhasil dihapus' 
   });
+});
+
+// Paste API endpoints
+app.post('/api/paste/create', express.json(), (req, res) => {
+  const { title, content } = req.body;
+  
+  if (!content || content.trim() === '') {
+    return res.status(400).json({
+      success: false,
+      message: 'Content is required'
+    });
+  }
+  
+  // Generate paste ID
+  const pasteId = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+  
+  // Save paste
+  const pasteData = {
+    id: pasteId,
+    title: title || 'Untitled',
+    content: content,
+    createdAt: new Date(),
+    timestamp: Date.now()
+  };
+  
+  pastes.set(pasteId, pasteData);
+  
+  console.log(`Paste created: ${pasteId} - ${pasteData.title}`);
+  
+  res.json({
+    success: true,
+    id: pasteId,
+    expiresIn: `${EMAIL_RETENTION_HOURS} hours`,
+    message: 'Paste created successfully'
+  });
+});
+
+app.get('/api/paste/:id', (req, res) => {
+  const pasteId = req.params.id;
+  const paste = pastes.get(pasteId);
+  
+  if (paste) {
+    res.json({
+      success: true,
+      paste: {
+        id: paste.id,
+        title: paste.title,
+        content: paste.content,
+        createdAt: paste.createdAt,
+        expiresAt: new Date(paste.timestamp + EMAIL_RETENTION_HOURS * 60 * 60 * 1000)
+      }
+    });
+  } else {
+    res.status(404).json({
+      success: false,
+      message: 'Paste not found or expired'
+    });
+  }
+});
+
+// Serve paste page
+app.get('/paste', (req, res) => {
+  res.sendFile(path.join(__dirname, 'paste.html'));
 });
 
 // Send email
