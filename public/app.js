@@ -6,6 +6,7 @@ let checkTimeout = null;
 // Elements
 const generateBtn = document.getElementById('generateBtn');
 const createBtn = document.getElementById('createBtn');
+const accessBtn = document.getElementById('accessBtn');
 const copyBtn = document.getElementById('copyBtn');
 const composeBtn = document.getElementById('composeBtn');
 const refreshBtn = document.getElementById('refreshBtn');
@@ -103,6 +104,7 @@ customUsernameInput.addEventListener('input', () => {
         availabilityMessage.textContent = '';
         availabilityMessage.className = 'availability-message';
         createBtn.disabled = true;
+        accessBtn.disabled = true;
         return;
     }
     
@@ -110,6 +112,7 @@ customUsernameInput.addEventListener('input', () => {
     availabilityMessage.textContent = 'Mengecek ketersediaan...';
     availabilityMessage.className = 'availability-message checking';
     createBtn.disabled = true;
+    accessBtn.disabled = true;
     
     // Debounce check
     checkTimeout = setTimeout(async () => {
@@ -119,18 +122,21 @@ customUsernameInput.addEventListener('input', () => {
             
             if (data.success) {
                 if (data.available) {
-                    availabilityMessage.textContent = '✓ Email tersedia!';
+                    availabilityMessage.textContent = '✓ Email tersedia - Buat baru';
                     availabilityMessage.className = 'availability-message available';
                     createBtn.disabled = false;
+                    accessBtn.disabled = true;
                 } else {
-                    availabilityMessage.textContent = '✗ Email sudah digunakan';
+                    availabilityMessage.textContent = '✓ Email ditemukan - Buka inbox';
                     availabilityMessage.className = 'availability-message unavailable';
                     createBtn.disabled = true;
+                    accessBtn.disabled = false;
                 }
             } else {
                 availabilityMessage.textContent = data.message || 'Format tidak valid';
                 availabilityMessage.className = 'availability-message error';
                 createBtn.disabled = true;
+                accessBtn.disabled = true;
             }
         } catch (error) {
             console.error('Error checking availability:', error);
