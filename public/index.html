@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temporary Email - Email Disposable Gratis</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📧 Temporary Email</h1>
+            <p>Email sementara untuk melindungi privasi Anda</p>
+        </header>
+
+        <div class="email-generator">
+            <div class="email-display">
+                <input type="text" id="currentEmail" readonly placeholder="Klik tombol untuk generate email">
+                <button id="copyBtn" class="btn-copy" disabled>📋 Copy</button>
+            </div>
+            <button id="generateBtn" class="btn-generate">🔄 Generate Email Baru</button>
+            <p class="info">Email akan menerima pesan otomatis dari server SMTP lokal</p>
+        </div>
+
+        <div class="inbox">
+            <div class="inbox-header">
+                <h2>📬 Inbox <span id="emailCount">(0)</span></h2>
+                <button id="refreshBtn" class="btn-refresh">🔄 Refresh</button>
+            </div>
+            
+            <div id="emailList" class="email-list">
+                <div class="empty-state">
+                    <p>📭 Belum ada email</p>
+                    <p class="small">Generate email terlebih dahulu untuk menerima pesan</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="emailModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="emailDetail"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>⚠️ Server SMTP berjalan di port 2525 | HTTP API di port 3000</p>
+        <p class="small">Untuk testing, kirim email ke alamat yang di-generate menggunakan SMTP client</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
