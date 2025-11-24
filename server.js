@@ -35,6 +35,18 @@ function generateRandomEmail() {
   return `${username}@${DOMAIN}`;
 }
 
+// Validate email username format
+function isValidUsername(username) {
+  // Only allow alphanumeric, dot, hyphen, underscore
+  const regex = /^[a-zA-Z0-9._-]{3,30}$/;
+  return regex.test(username);
+}
+
+// Check if email is available
+function isEmailAvailable(email) {
+  return !emailBoxes.has(email.toLowerCase());
+}
+
 // Cleanup expired emails (auto-delete setelah retention period)
 function cleanupExpiredEmails() {
   const now = Date.now();
@@ -88,6 +100,69 @@ app.get('/api/generate', (req, res) => {
   });
 });
 
+// Create email with custom username
+app.post('/api/create', express.json(), (req, res) => {
+  const { username } = req.body;
+  
+  if (!username) {
+    return res.status(400).json({
+      success: false,
+      message: 'Username harus diisi'
+    });
+  }
+  
+  if (!isValidUsername(username)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Username harus 3-30 karakter, hanya huruf, angka, titik, dash, atau underscore'
+    });
+  }
+  
+  const email = `${username.toLowerCase()}@${DOMAIN}`;
+  
+  if (!isEmailAvailable(email)) {
+    return res.status(409).json({
+      success: false,
+      message: 'Email sudah digunakan, pilih username lain'
+    });
+  }
+  
+  emailBoxes.set(email, {
+    emails: [],
+    timestamp: Date.now()
+  });
+  
+  res.json({
+    success: true,
+    email: email,
+    expiresIn: `${EMAIL_RETENTION_HOURS} jam`,
+    message: 'Email custom berhasil dibuat'
+  });
+});
+
+// Check email availability
+app.get('/api/check/:username', (req, res) => {
+  const username = req.params.username;
+  
+  if (!isValidUsername(username)) {
+    return res.json({
+      success: false,
+      available: false,
+      message: 'Format username tidak valid'
+    });
+  }
+  
+  const email = `${username.toLowerCase()}@${DOMAIN}`;
+  const available = isEmailAvailable(email);
+  
+  res.json({
+    success: true,
+    available: available,
+    email: email,
+    message: available ? 'Email tersedia' : 'Email sudah digunakan'
+  });
+});
+
 // Get server stats
 app.get('/api/stats', (req, res) => {
   const stats = getMemoryStats();
@@ -138,6 +213,81 @@ app.delete('/api/emails/:emailAddress', (req, res) => {
     success: true, 
     message: 'Semua email berhasil dihapus' 
   });
+});
+
+// Send email
+app.post('/api/send', express.json(), async (req, res) => {
+  const { from, to, subject, message, html } = req.body;
+  
+  // Validasi
+  if (!from || !to || !subject || !message) {
+    return res.status(400).json({
+      success: false,
+      message: 'From, To, Subject, dan Message harus diisi'
+    });
+  }
+  
+  // Validasi email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(from) || !emailRegex.test(to)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Format email tidak valid'
+    });
+  }
+  
+  try {
+    // Buat email object
+    const emailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const emailData = {
+      id: emailId,
+      from: from,
+      to: [to.toLowerCase()],
+      subject: subject,
+      text: message,
+      html: html || message.replace(/\n/g, '<br>'),
+      date: new Date(),
+      attachments: []
+    };
+    
+    // Simpan email
+    emails.set(emailId, {
+      data: emailData,
+      timestamp: Date.now()
+    });
+    
+    // Tambahkan ke inbox recipient
+    const recipient = to.toLowerCase();
+    if (!emailBoxes.has(recipient)) {
+      emailBoxes.set(recipient, {
+        emails: [],
+        timestamp: Date.now()
+      });
+    }
+    
+    emailBoxes.get(recipient).emails.push({
+      id: emailId,
+      from: from,
+      subject: subject,
+      date: new Date(),
+      preview: message.substring(0, 100)
+    });
+    
+    console.log(`Email sent from ${from} to ${to}`);
+    console.log(`Subject: ${subject}`);
+    
+    res.json({
+      success: true,
+      message: 'Email berhasil dikirim',
+      emailId: emailId
+    });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengirim email'
+    });
+  }
 });
 
 // SMTP Server untuk menerima email

@@ -1,17 +1,60 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.origin + '/api';
 let currentEmail = null;
 let refreshInterval = null;
+let checkTimeout = null;
 
 // Elements
 const generateBtn = document.getElementById('generateBtn');
+const createBtn = document.getElementById('createBtn');
 const copyBtn = document.getElementById('copyBtn');
+const composeBtn = document.getElementById('composeBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const currentEmailInput = document.getElementById('currentEmail');
+const customUsernameInput = document.getElementById('customUsername');
+const domainNameSpan = document.getElementById('domainName');
+const availabilityMessage = document.getElementById('availabilityMessage');
 const emailList = document.getElementById('emailList');
 const emailCount = document.getElementById('emailCount');
 const modal = document.getElementById('emailModal');
 const closeModal = document.querySelector('.close');
 const emailDetail = document.getElementById('emailDetail');
+
+// Compose modal elements
+const composeModal = document.getElementById('composeModal');
+const closeComposeModal = document.querySelector('.close-compose');
+const composeForm = document.getElementById('composeForm');
+const composeFromInput = document.getElementById('composeFrom');
+const composeToInput = document.getElementById('composeTo');
+const composeSubjectInput = document.getElementById('composeSubject');
+const composeMessageInput = document.getElementById('composeMessage');
+const btnCancel = document.querySelector('.btn-cancel');
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tabName = btn.dataset.tab;
+        
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(tabName + 'Tab').classList.add('active');
+    });
+});
+
+// Get domain name from server
+fetch(`${API_URL}/stats`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.config.domain) {
+            domainNameSpan.textContent = data.config.domain;
+        }
+    })
+    .catch(err => console.error('Error fetching domain:', err));
 
 // Generate email baru
 generateBtn.addEventListener('click', async () => {
@@ -26,6 +69,7 @@ generateBtn.addEventListener('click', async () => {
             currentEmail = data.email;
             currentEmailInput.value = currentEmail;
             copyBtn.disabled = false;
+            composeBtn.disabled = false;
             
             // Clear inbox
             emailList.innerHTML = '<div class="empty-state"><p>📭 Belum ada email</p><p class="small">Menunggu email masuk...</p></div>';
@@ -42,6 +86,115 @@ generateBtn.addEventListener('click', async () => {
     } finally {
         generateBtn.disabled = false;
         generateBtn.textContent = '🔄 Generate Email Baru';
+    }
+});
+
+// Custom email username input - check availability
+customUsernameInput.addEventListener('input', () => {
+    const username = customUsernameInput.value.trim();
+    
+    // Clear previous timeout
+    if (checkTimeout) {
+        clearTimeout(checkTimeout);
+    }
+    
+    // Reset state if empty
+    if (!username) {
+        availabilityMessage.textContent = '';
+        availabilityMessage.className = 'availability-message';
+        createBtn.disabled = true;
+        return;
+    }
+    
+    // Show checking state
+    availabilityMessage.textContent = 'Mengecek ketersediaan...';
+    availabilityMessage.className = 'availability-message checking';
+    createBtn.disabled = true;
+    
+    // Debounce check
+    checkTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`${API_URL}/check/${encodeURIComponent(username)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.available) {
+                    availabilityMessage.textContent = '✓ Email tersedia!';
+                    availabilityMessage.className = 'availability-message available';
+                    createBtn.disabled = false;
+                } else {
+                    availabilityMessage.textContent = '✗ Email sudah digunakan';
+                    availabilityMessage.className = 'availability-message unavailable';
+                    createBtn.disabled = true;
+                }
+            } else {
+                availabilityMessage.textContent = data.message || 'Format tidak valid';
+                availabilityMessage.className = 'availability-message error';
+                createBtn.disabled = true;
+            }
+        } catch (error) {
+            console.error('Error checking availability:', error);
+            availabilityMessage.textContent = 'Error mengecek ketersediaan';
+            availabilityMessage.className = 'availability-message error';
+            createBtn.disabled = true;
+        }
+    }, 500);
+});
+
+// Create custom email
+createBtn.addEventListener('click', async () => {
+    const username = customUsernameInput.value.trim();
+    
+    if (!username) {
+        showNotification('Username harus diisi', 'error');
+        return;
+    }
+    
+    try {
+        createBtn.disabled = true;
+        createBtn.textContent = '⏳ Membuat...';
+        
+        const response = await fetch(`${API_URL}/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentEmail = data.email;
+            currentEmailInput.value = currentEmail;
+            copyBtn.disabled = false;
+            composeBtn.disabled = false;
+            
+            // Clear inbox
+            emailList.innerHTML = '<div class="empty-state"><p>📭 Belum ada email</p><p class="small">Menunggu email masuk...</p></div>';
+            emailCount.textContent = '(0)';
+            
+            // Switch to random tab to show the created email
+            document.querySelector('.tab-btn[data-tab="random"]').click();
+            
+            // Start auto-refresh
+            startAutoRefresh();
+            
+            // Reset custom form
+            customUsernameInput.value = '';
+            availabilityMessage.textContent = '';
+            availabilityMessage.className = 'availability-message';
+            
+            showNotification('Email custom berhasil dibuat!', 'success');
+        } else {
+            showNotification(data.message || 'Gagal membuat email', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Gagal membuat email', 'error');
+    } finally {
+        createBtn.disabled = false;
+        createBtn.textContent = '✨ Buat Email Custom';
     }
 });
 
@@ -145,6 +298,75 @@ async function showEmailDetail(emailId) {
     }
 }
 
+// Compose email button
+composeBtn.addEventListener('click', () => {
+    if (!currentEmail) {
+        showNotification('Generate email terlebih dahulu', 'error');
+        return;
+    }
+    
+    composeFromInput.value = currentEmail;
+    composeToInput.value = '';
+    composeSubjectInput.value = '';
+    composeMessageInput.value = '';
+    composeModal.style.display = 'block';
+});
+
+// Close compose modal
+closeComposeModal.addEventListener('click', () => {
+    composeModal.style.display = 'none';
+});
+
+btnCancel.addEventListener('click', () => {
+    composeModal.style.display = 'none';
+});
+
+// Send email form
+composeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const from = composeFromInput.value;
+    const to = composeToInput.value;
+    const subject = composeSubjectInput.value;
+    const message = composeMessageInput.value;
+    
+    try {
+        const btnSend = composeForm.querySelector('.btn-send');
+        btnSend.disabled = true;
+        btnSend.textContent = '⏳ Mengirim...';
+        
+        const response = await fetch(`${API_URL}/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: from,
+                to: to,
+                subject: subject,
+                message: message
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Email berhasil dikirim!', 'success');
+            composeModal.style.display = 'none';
+            composeForm.reset();
+        } else {
+            showNotification(data.message || 'Gagal mengirim email', 'error');
+        }
+    } catch (error) {
+        console.error('Error sending email:', error);
+        showNotification('Gagal mengirim email', 'error');
+    } finally {
+        const btnSend = composeForm.querySelector('.btn-send');
+        btnSend.disabled = false;
+        btnSend.textContent = '📤 Kirim Email';
+    }
+});
+
 // Close modal
 closeModal.addEventListener('click', () => {
     modal.style.display = 'none';
@@ -153,6 +375,9 @@ closeModal.addEventListener('click', () => {
 window.addEventListener('click', (e) => {
     if (e.target === modal) {
         modal.style.display = 'none';
+    }
+    if (e.target === composeModal) {
+        composeModal.style.display = 'none';
     }
 });
 

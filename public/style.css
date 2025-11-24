@@ -39,6 +39,43 @@ header p {
     margin-bottom: 30px;
 }
 
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.tab-btn:hover {
+    color: #667eea;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 .email-display {
     display: flex;
     gap: 10px;
@@ -88,8 +125,13 @@ header p {
     transition: background 0.3s;
 }
 
-.btn-generate:hover {
+.btn-generate:hover:not(:disabled) {
     background: #5568d3;
+}
+
+.btn-generate:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
 }
 
 .info {
@@ -97,6 +139,175 @@ header p {
     text-align: center;
     color: #666;
     font-size: 0.9rem;
+}
+
+.custom-email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: #f5f5f5;
+}
+
+#customUsername {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.1rem;
+    outline: none;
+}
+
+.domain-suffix {
+    font-size: 1.1rem;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.availability-message {
+    min-height: 24px;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.availability-message.available {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.availability-message.unavailable {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.availability-message.checking {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.availability-message.error {
+    background: #ffebee;
+    color: #c62828;
+}
+
+/* Compose Modal */
+#composeModal .modal-content {
+    max-width: 600px;
+}
+
+#composeModal h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.compose-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-group input[readonly] {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-send {
+    flex: 1;
+    padding: 12px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-send:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.btn-send:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    padding: 12px 30px;
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-cancel:hover {
+    background: #d0d0d0;
+}
+
+.close-compose {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+}
+
+.close-compose:hover {
+    color: #333;
 }
 
 .inbox {
@@ -123,6 +334,31 @@ header p {
 #emailCount {
     color: #667eea;
     font-size: 0.9rem;
+}
+
+.inbox-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-compose {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-compose:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.btn-compose:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
 }
 
 .btn-refresh {
