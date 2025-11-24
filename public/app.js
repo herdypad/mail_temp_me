@@ -1,7 +1,23 @@
+// Auto-redirect ke domain production jika localhost di production
+if (window.location.hostname === 'localhost' && window.location.port === '3000') {
+    // Check if this is production by calling stats API
+    fetch('/api/stats')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.config.domain && data.config.domain !== 'temp-mail.local') {
+                // Redirect to production domain
+                const protocol = window.location.protocol;
+                window.location.href = `${protocol}//${data.config.domain}`;
+            }
+        })
+        .catch(() => {});
+}
+
 const API_URL = window.location.origin + '/api';
 let currentEmail = null;
 let refreshInterval = null;
 let checkTimeout = null;
+let isLoading = false;
 
 // Elements
 const generateBtn = document.getElementById('generateBtn');
@@ -16,9 +32,27 @@ const domainNameSpan = document.getElementById('domainName');
 const availabilityMessage = document.getElementById('availabilityMessage');
 const emailList = document.getElementById('emailList');
 const emailCount = document.getElementById('emailCount');
+const loadingIndicator = document.getElementById('loadingIndicator');
 const modal = document.getElementById('emailModal');
 const closeModal = document.querySelector('.close');
 const emailDetail = document.getElementById('emailDetail');
+
+// Loading state functions
+function showLoading() {
+    isLoading = true;
+    loadingIndicator.style.display = 'flex';
+    emailList.style.display = 'none';
+    refreshBtn.classList.add('loading');
+    refreshBtn.disabled = true;
+}
+
+function hideLoading() {
+    isLoading = false;
+    loadingIndicator.style.display = 'none';
+    emailList.style.display = 'flex';
+    refreshBtn.classList.remove('loading');
+    refreshBtn.disabled = false;
+}
 
 // Compose modal elements
 const composeModal = document.getElementById('composeModal');
@@ -271,9 +305,14 @@ copyBtn.addEventListener('click', () => {
 });
 
 // Refresh inbox
-refreshBtn.addEventListener('click', () => {
-    if (currentEmail) {
-        loadEmails();
+refreshBtn.addEventListener('click', async () => {
+    if (currentEmail && !isLoading) {
+        showLoading();
+        await loadEmails();
+        // Delay sedikit untuk smooth UX
+        setTimeout(() => {
+            hideLoading();
+        }, 300);
     }
 });
 
@@ -291,6 +330,7 @@ async function loadEmails() {
         }
     } catch (error) {
         console.error('Error loading emails:', error);
+        hideLoading();
     }
 }
 
@@ -448,7 +488,10 @@ function startAutoRefresh() {
     }
     
     refreshInterval = setInterval(() => {
-        loadEmails();
+        // Auto-refresh tanpa loading indicator (silent refresh)
+        if (!isLoading) {
+            loadEmails();
+        }
     }, 5000); // Refresh setiap 5 detik
 }
 
