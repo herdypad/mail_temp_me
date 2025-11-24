@@ -14,7 +14,7 @@ const EMAIL_RETENTION_HOURS = parseInt(process.env.EMAIL_RETENTION_HOURS) || 24;
 const MAX_EMAIL_SIZE = parseInt(process.env.MAX_EMAIL_SIZE) || 10485760;
 
 // Middleware
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'];
 app.use(cors({
   origin: allowedOrigins[0] === '*' ? '*' : allowedOrigins
 }));
@@ -160,17 +160,17 @@ const smtpServer = new SMTPServer({
       const emailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const emailData = {
         id: emailId,
-        from: parsed.from?.text || session.envelope.mailFrom.address,
+        from: (parsed.from && parsed.from.text) || session.envelope.mailFrom.address,
         to: recipients,
         subject: parsed.subject || '(No Subject)',
         text: parsed.text || '',
         html: parsed.html || '',
         date: parsed.date || new Date(),
-        attachments: parsed.attachments?.map(att => ({
+        attachments: parsed.attachments ? parsed.attachments.map(att => ({
           filename: att.filename,
           contentType: att.contentType,
           size: att.size
-        })) || []
+        })) : []
       };
 
       // Simpan email dengan timestamp
