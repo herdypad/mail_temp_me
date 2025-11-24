@@ -143,8 +143,62 @@ customUsernameInput.addEventListener('input', () => {
             availabilityMessage.textContent = 'Error mengecek ketersediaan';
             availabilityMessage.className = 'availability-message error';
             createBtn.disabled = true;
+            accessBtn.disabled = true;
         }
     }, 500);
+});
+
+// Access existing email inbox
+accessBtn.addEventListener('click', async () => {
+    const username = customUsernameInput.value.trim();
+    
+    if (!username) {
+        showNotification('Username harus diisi', 'error');
+        return;
+    }
+    
+    try {
+        accessBtn.disabled = true;
+        accessBtn.textContent = '⏳ Membuka...';
+        
+        const email = `${username.toLowerCase()}@${domainNameSpan.textContent}`;
+        
+        // Check if email exists and get inbox
+        const response = await fetch(`${API_URL}/emails/${encodeURIComponent(email)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentEmail = email;
+            currentEmailInput.value = currentEmail;
+            copyBtn.disabled = false;
+            composeBtn.disabled = false;
+            
+            // Display emails
+            displayEmails(data.emails);
+            emailCount.textContent = `(${data.count})`;
+            
+            // Switch to random tab to show the inbox
+            document.querySelector('.tab-btn[data-tab="random"]').click();
+            
+            // Start auto-refresh
+            startAutoRefresh();
+            
+            // Reset custom form
+            customUsernameInput.value = '';
+            availabilityMessage.textContent = '';
+            availabilityMessage.className = 'availability-message';
+            
+            showNotification(`Inbox dibuka: ${email}`, 'success');
+        } else {
+            showNotification('Email tidak ditemukan', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Gagal membuka inbox', 'error');
+    } finally {
+        accessBtn.disabled = false;
+        accessBtn.textContent = '🔓 Buka Inbox';
+    }
 });
 
 // Create custom email
