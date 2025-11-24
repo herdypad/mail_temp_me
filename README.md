@@ -517,3 +517,55 @@ Contributions are welcome! Please:
 
 **Repository:** [github.com/herdypad/mail_temp_me](https://github.com/herdypad/mail_temp_me)
 # mail_temp_me
+
+
+# Install PM2 secara global
+sudo npm install -g pm2
+
+# Verify instalasi
+pm2 -v
+
+# Masuk ke folder project
+cd /home/email_temp
+
+# Start aplikasi dengan PM2
+pm2 start server.js --name temp-mail
+
+# Setup auto-start saat server reboot
+pm2 startup
+
+# Copy-paste command yang muncul (contoh):
+# sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u root --hp /root
+
+# Save PM2 process list
+pm2 save
+
+# Check status
+pm2 status
+
+# Monitor real-time
+pm2 monit
+
+# View logs
+pm2 logs temp-mail
+
+# View logs 50 baris terakhir
+pm2 logs temp-mail --lines 50
+
+# Restart aplikasi
+pm2 restart temp-mail
+
+# Stop aplikasi
+pm2 stop temp-mail
+
+# Delete dari PM2
+pm2 delete temp-mail
+
+# Restart semua aplikasi
+pm2 restart all
+
+# Info detail aplikasi
+pm2 info temp-mail
+
+# Flush logs
+pm2 flush
