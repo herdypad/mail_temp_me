@@ -254,7 +254,7 @@ createBtn.addEventListener('click', async () => {
         showNotification('Gagal membuat email', 'error');
     } finally {
         createBtn.disabled = false;
-        createBtn.textContent = '✨ Buat Email Custom';
+        createBtn.textContent = '✨ Buat Baru';
     }
 });
 
