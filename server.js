@@ -287,7 +287,7 @@ app.get('/api/paste/:id', (req, res) => {
 
 // Serve paste page
 app.get('/paste', (req, res) => {
-  res.sendFile(path.join(__dirname, 'paste.html'));
+  res.sendFile(path.join(__dirname, 'public', 'paste.html'));
 });
 
 // Send email
