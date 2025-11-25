@@ -502,25 +502,30 @@ header p {
 
 .email-item .email-from {
     font-weight: bold;
-    color: #333;
-    margin-bottom: 5px;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
 }
 
 .email-item .email-subject {
     color: #667eea;
-    font-size: 1.1rem;
-    margin-bottom: 5px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.4;
 }
 
 .email-item .email-preview {
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 5px;
+    color: #4a5568;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    line-height: 1.5;
 }
 
 .email-item .email-date {
-    color: #999;
-    font-size: 0.8rem;
+    color: #718096;
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
 .modal {
@@ -576,8 +581,14 @@ header p {
 
 #emailDetail .detail-body {
     margin-top: 20px;
-    line-height: 1.6;
-    color: #333;
+    line-height: 1.8;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+#emailDetail .detail-body a {
+    color: #667eea;
+    text-decoration: underline;
 }
 
 footer {

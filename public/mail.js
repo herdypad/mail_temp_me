@@ -4,6 +4,49 @@ let refreshInterval = null;
 let isLoading = false;
 let lastEmailIds = new Set(); // Track email IDs we've already seen
 
+// Sound notification untuk email baru
+function playNotificationSound() {
+    try {
+        // Buat audio context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Nada notifikasi (2 beep singkat)
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+        
+        // Beep kedua
+        setTimeout(() => {
+            const oscillator2 = audioContext.createOscillator();
+            const gainNode2 = audioContext.createGain();
+            
+            oscillator2.connect(gainNode2);
+            gainNode2.connect(audioContext.destination);
+            
+            oscillator2.frequency.value = 1000;
+            oscillator2.type = 'sine';
+            
+            gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator2.start(audioContext.currentTime);
+            oscillator2.stop(audioContext.currentTime + 0.1);
+        }, 150);
+    } catch (error) {
+        console.error('Error playing sound:', error);
+    }
+}
+
 // Get username from URL path
 const pathParts = window.location.pathname.split('/');
 const username = pathParts[pathParts.length - 1];
@@ -145,6 +188,7 @@ async function loadEmails() {
             if (hasNewEmails) {
                 displayLocalEmails();
                 showNotification('📧 Email baru masuk!', 'success');
+                playNotificationSound();
             }
 
             // Update expires info
