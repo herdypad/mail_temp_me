@@ -290,6 +290,11 @@ app.get('/paste', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'paste.html'));
 });
 
+// Serve mail inbox page by username
+app.get('/mail/:username', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'mail.html'));
+});
+
 // Send email
 app.post('/api/send', express.json(), async (req, res) => {
   const { from, to, subject, message, html } = req.body;
