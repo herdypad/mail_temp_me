@@ -275,7 +275,13 @@ async function showEmailDetail(emailId) {
                 ` : ''}
                 <div class="detail-body">
                     <div class="detail-label">Pesan:</div>
-                    <div>${email.html || email.text ? (email.html || escapeHtml(email.text).replace(/\n/g, '<br>')) : 'Tidak ada konten'}</div>
+                    <div>
+                        ${
+                            (typeof email.html === 'string' && email.html.trim()) ? email.html :
+                            (typeof email.text === 'string' && email.text.trim()) ? escapeHtml(email.text).replace(/\n/g, '<br>') :
+                            'Tidak ada konten'
+                        }
+                    </div>
                 </div>
             `;
             emailModal.style.display = 'block';
