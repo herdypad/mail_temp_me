@@ -279,6 +279,7 @@ async function showEmailDetail(emailId) {
                         ${
                             (typeof email.html === 'string' && email.html.trim()) ? email.html :
                             (typeof email.text === 'string' && email.text.trim()) ? escapeHtml(email.text).replace(/\n/g, '<br>') :
+                            (typeof email.preview === 'string' && email.preview.trim()) ? escapeHtml(email.preview) :
                             'Tidak ada konten'
                         }
                     </div>
