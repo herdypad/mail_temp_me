@@ -11,34 +11,34 @@ function playNotificationSound() {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
+
         // Nada notifikasi (2 beep singkat)
         oscillator.frequency.value = 800;
         oscillator.type = 'sine';
-        
+
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-        
+
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.1);
-        
+
         // Beep kedua
         setTimeout(() => {
             const oscillator2 = audioContext.createOscillator();
             const gainNode2 = audioContext.createGain();
-            
+
             oscillator2.connect(gainNode2);
             gainNode2.connect(audioContext.destination);
-            
+
             oscillator2.frequency.value = 1000;
             oscillator2.type = 'sine';
-            
+
             gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            
+
             oscillator2.start(audioContext.currentTime);
             oscillator2.stop(audioContext.currentTime + 0.1);
         }, 150);
@@ -158,7 +158,7 @@ function displayLocalEmails() {
     const emails = getLocalEmails();
     displayEmails(emails);
     emailCountSpan.textContent = `${emails.length} email`;
-    
+
     // Initialize lastEmailIds
     emails.forEach(email => lastEmailIds.add(email.id));
 }
@@ -174,15 +174,38 @@ async function loadEmails() {
         if (data.success) {
             // Check for NEW emails only
             let hasNewEmails = false;
-            data.emails.forEach(email => {
-                if (!lastEmailIds.has(email.id)) {
-                    // This is a new email, add to localStorage
-                    if (addEmailToLocal(email)) {
-                        lastEmailIds.add(email.id);
-                        hasNewEmails = true;
+
+            // Process each new email
+            for (const emailPreview of data.emails) {
+                if (!lastEmailIds.has(emailPreview.id)) {
+                    // This is a new email, fetch full content from server
+                    try {
+                        const detailResponse = await fetch(`${API_URL}/email/${emailPreview.id}`);
+                        const detailData = await detailResponse.json();
+
+                        if (detailData.success && detailData.email) {
+                            // Save the FULL email with text and html to localStorage
+                            if (addEmailToLocal(detailData.email)) {
+                                lastEmailIds.add(emailPreview.id);
+                                hasNewEmails = true;
+                            }
+                        } else {
+                            // Fallback: save preview data if full content not available
+                            if (addEmailToLocal(emailPreview)) {
+                                lastEmailIds.add(emailPreview.id);
+                                hasNewEmails = true;
+                            }
+                        }
+                    } catch (detailError) {
+                        console.error('Error fetching email detail:', detailError);
+                        // Fallback: save preview data
+                        if (addEmailToLocal(emailPreview)) {
+                            lastEmailIds.add(emailPreview.id);
+                            hasNewEmails = true;
+                        }
                     }
                 }
-            });
+            }
 
             // Refresh display if we got new emails
             if (hasNewEmails) {
@@ -276,12 +299,11 @@ async function showEmailDetail(emailId) {
                 <div class="detail-body">
                     <div class="detail-label">Pesan:</div>
                     <div>
-                        ${
-                            (typeof email.html === 'string' && email.html.trim()) ? email.html :
-                            (typeof email.text === 'string' && email.text.trim()) ? escapeHtml(email.text).replace(/\n/g, '<br>') :
-                            (typeof email.preview === 'string' && email.preview.trim()) ? escapeHtml(email.preview) :
+                        ${(typeof email.html === 'string' && email.html.trim()) ? email.html :
+                    (typeof email.text === 'string' && email.text.trim()) ? escapeHtml(email.text).replace(/\n/g, '<br>') :
+                        (typeof email.preview === 'string' && email.preview.trim()) ? escapeHtml(email.preview) :
                             'Tidak ada konten'
-                        }
+                }
                     </div>
                 </div>
             `;
@@ -344,10 +366,10 @@ clearCacheBtn.addEventListener('click', () => {
         // Clear localStorage
         localStorage.removeItem(STORAGE_KEY);
         lastEmailIds.clear();
-        
+
         // Update display
         displayLocalEmails();
-        
+
         showNotification('Cache berhasil dihapus!', 'success');
     }
 });
