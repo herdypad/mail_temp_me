@@ -2,10 +2,46 @@ const API_URL = window.location.origin + '/api';
 let currentEmail = null;
 let refreshInterval = null;
 let isLoading = false;
+let lastEmailIds = new Set(); // Track email IDs we've already seen
 
 // Get username from URL path
 const pathParts = window.location.pathname.split('/');
 const username = pathParts[pathParts.length - 1];
+
+// LocalStorage key for this inbox
+const STORAGE_KEY = `inbox_${username}`;
+
+// Get emails from localStorage
+function getLocalEmails() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Error reading from localStorage:', error);
+        return [];
+    }
+}
+
+// Save emails to localStorage
+function saveLocalEmails(emails) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(emails));
+    } catch (error) {
+        console.error('Error saving to localStorage:', error);
+    }
+}
+
+// Add new email to local storage
+function addEmailToLocal(email) {
+    const emails = getLocalEmails();
+    // Check if email already exists
+    if (!emails.find(e => e.id === email.id)) {
+        emails.unshift(email); // Add to beginning
+        saveLocalEmails(emails);
+        return true;
+    }
+    return false;
+}
 
 // Elements
 const emailAddressSpan = document.getElementById('emailAddress');
@@ -14,6 +50,7 @@ const expiresAtSpan = document.getElementById('expiresAt');
 const copyEmailBtn = document.getElementById('copyEmail');
 const refreshBtn = document.getElementById('refreshBtn');
 const composeBtn = document.getElementById('composeBtn');
+const clearCacheBtn = document.getElementById('clearCacheBtn');
 const emailList = document.getElementById('emailList');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const errorState = document.getElementById('errorState');
@@ -60,12 +97,12 @@ async function init() {
         emailAddressSpan.textContent = currentEmail;
         document.getElementById('composeFrom').value = currentEmail;
 
-        // Load emails
+        // Load emails from localStorage first
         showLoading();
-        await loadEmails();
+        displayLocalEmails();
         hideLoading();
 
-        // Start auto-refresh
+        // Start auto-refresh to check for new emails
         startAutoRefresh();
     } catch (error) {
         console.error('Error initializing:', error);
@@ -73,7 +110,17 @@ async function init() {
     }
 }
 
-// Load emails
+// Display emails from localStorage
+function displayLocalEmails() {
+    const emails = getLocalEmails();
+    displayEmails(emails);
+    emailCountSpan.textContent = `${emails.length} email`;
+    
+    // Initialize lastEmailIds
+    emails.forEach(email => lastEmailIds.add(email.id));
+}
+
+// Load emails - check server for NEW emails only and add to localStorage
 async function loadEmails() {
     if (!currentEmail) return;
 
@@ -82,8 +129,23 @@ async function loadEmails() {
         const data = await response.json();
 
         if (data.success) {
-            displayEmails(data.emails);
-            emailCountSpan.textContent = `${data.count} email`;
+            // Check for NEW emails only
+            let hasNewEmails = false;
+            data.emails.forEach(email => {
+                if (!lastEmailIds.has(email.id)) {
+                    // This is a new email, add to localStorage
+                    if (addEmailToLocal(email)) {
+                        lastEmailIds.add(email.id);
+                        hasNewEmails = true;
+                    }
+                }
+            });
+
+            // Refresh display if we got new emails
+            if (hasNewEmails) {
+                displayLocalEmails();
+                showNotification('📧 Email baru masuk!', 'success');
+            }
 
             // Update expires info
             if (data.expiresAt) {
@@ -91,20 +153,19 @@ async function loadEmails() {
                 const now = new Date();
                 const diffHours = Math.round((expiresDate - now) / (1000 * 60 * 60));
                 expiresAtSpan.textContent = `Expires dalam ${diffHours} jam`;
+            } else {
+                expiresAtSpan.textContent = 'Aktif';
             }
 
             // Hide error if any
             errorState.style.display = 'none';
             document.querySelector('.mail-header').style.display = 'block';
             document.querySelector('.inbox-controls').style.display = 'flex';
-        } else {
-            showError();
         }
     } catch (error) {
         console.error('Error loading emails:', error);
-        if (!isLoading) {
-            showError();
-        }
+        // Still show local emails even if server fails
+        displayLocalEmails();
     }
 }
 
@@ -132,14 +193,23 @@ function displayEmails(emails) {
     });
 }
 
-// Show email detail
+// Show email detail - get from localStorage first, fallback to server
 async function showEmailDetail(emailId) {
     try {
-        const response = await fetch(`${API_URL}/email/${emailId}`);
-        const data = await response.json();
+        // Try to find in localStorage first
+        const localEmails = getLocalEmails();
+        let email = localEmails.find(e => e.id === emailId);
 
-        if (data.success) {
-            const email = data.email;
+        // If not in localStorage, try server (for older emails)
+        if (!email) {
+            const response = await fetch(`${API_URL}/email/${emailId}`);
+            const data = await response.json();
+            if (data.success) {
+                email = data.email;
+            }
+        }
+
+        if (email) {
             emailDetail.innerHTML = `
                 <div class="detail-from">
                     <div class="detail-label">Dari:</div>
@@ -161,10 +231,12 @@ async function showEmailDetail(emailId) {
                 ` : ''}
                 <div class="detail-body">
                     <div class="detail-label">Pesan:</div>
-                    <div>${email.html || escapeHtml(email.text).replace(/\n/g, '<br>')}</div>
+                    <div>${email.html || email.text ? (email.html || escapeHtml(email.text).replace(/\n/g, '<br>')) : 'Tidak ada konten'}</div>
                 </div>
             `;
             emailModal.style.display = 'block';
+        } else {
+            showNotification('Email tidak ditemukan', 'error');
         }
     } catch (error) {
         console.error('Error loading email detail:', error);
@@ -213,6 +285,20 @@ composeBtn.addEventListener('click', () => {
     document.getElementById('composeSubject').value = '';
     document.getElementById('composeMessage').value = '';
     composeModal.style.display = 'block';
+});
+
+// Clear cache button
+clearCacheBtn.addEventListener('click', () => {
+    if (confirm('Hapus semua email dari cache browser ini?\n\nEmail akan hilang permanen dari browser ini (tidak bisa dikembalikan).')) {
+        // Clear localStorage
+        localStorage.removeItem(STORAGE_KEY);
+        lastEmailIds.clear();
+        
+        // Update display
+        displayLocalEmails();
+        
+        showNotification('Cache berhasil dihapus!', 'success');
+    }
 });
 
 // Close modals
