@@ -426,6 +426,12 @@ const smtpServer = new SMTPServer({
           date: emailData.date,
           preview: emailData.text.substring(0, 100)
         });
+        // Log detail email masuk
+        console.log(`[INBOX] Email masuk ke: ${recipient}`);
+        console.log(`        Dari: ${emailData.from}`);
+        console.log(`        Subject: ${emailData.subject}`);
+        console.log(`        Preview: ${emailData.text ? emailData.text.substring(0, 100) : ''}`);
+        console.log(`        Tanggal: ${emailData.date}`);
       });
 
       console.log(`Email diterima untuk: ${recipients.join(', ')}`);
