@@ -193,6 +193,8 @@ app.get('/api/emails/:emailAddress', (req, res) => {
   const emailAddress = req.params.emailAddress.toLowerCase();
   const box = emailBoxes.get(emailAddress);
   const inbox = box ? box.emails : [];
+  // Log ke terminal
+  console.log(`[API] Cek inbox: ${emailAddress} | Jumlah email: ${inbox.length}`);
   res.json({ 
     success: true, 
     emails: inbox,
