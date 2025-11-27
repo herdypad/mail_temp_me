@@ -59,3 +59,8 @@ QUIT
 - Tunggu 24-48 jam untuk DNS propagate
 - Setup PTR record di provider hosting</content>
 <filePath>/Users/herdy/SideJob/email_temp/DNS_SETUP.md
+
+
+cara cek bis ke web ini
+
+https://mxtoolbox.com/SuperTool.aspx
