@@ -131,12 +131,6 @@ app.post('/api/create', express.json(), (req, res) => {
   }
   // Validasi domain
   const selectedDomain = domain ? domain.trim() : DOMAINS[0];
-  if (!DOMAINS.includes(selectedDomain)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Domain tidak didukung'
-    });
-  }
   const email = `${username.toLowerCase()}@${selectedDomain}`;
   if (!isEmailAvailable(email)) {
     return res.status(409).json({
@@ -166,13 +160,6 @@ app.get('/api/check/:username/:domain', (req, res) => {
       success: false,
       available: false,
       message: 'Format username tidak valid'
-    });
-  }
-  if (!DOMAINS.includes(domain)) {
-    return res.json({
-      success: false,
-      available: false,
-      message: 'Domain tidak didukung'
     });
   }
   const email = `${username.toLowerCase()}@${domain}`;

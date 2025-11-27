@@ -1,65 +1,24 @@
 # Panduan DNS - Domain: aniyahapp.my.id
 
 ## MX Record (WAJIB)
-```
-Type: MX
-Name: @
-Value: [IP_PUBLIC_SERVER_ANDA]
-Priority: 10
-TTL: 3600
-```
 
-**Contoh dengan IP:**
-```
 Type: MX
 Name: @
-Value: 192.168.1.100
+Value: mail.namaDomaim.com
 Priority: 10
 TTL: 3600
-```
 
 ## SPF Record (WAJIB)
-```
+
 Type: TXT
 Name: @
-Value: "v=spf1 ip4:[IP_PUBLIC_SERVER_ANDA] -all"
+Value: "v=spf1 ip4:8.215.48.142 -all"
 TTL: 3600
 ```
 
-**Contoh dengan IP:**
-```
-Type: TXT
-Name: @
-Value: "v=spf1 ip4:192.168.1.100 -all"
-TTL: 3600
-```
 
-## DMARC Record (REKOMENDASI)
-```
-Type: TXT
-Name: _dmarc
-Value: "v=DMARC1; p=quarantine; rua=mailto:admin@aniyahapp.my.id"
-TTL: 3600
-```
+## A Record untuk Mail Server (Wajib)
 
-**Contoh lengkap:**
-```
-Type: TXT
-Name: _dmarc
-Value: "v=DMARC1; p=quarantine; rua=mailto:admin@aniyahapp.my.id"
-TTL: 3600
-```
-
-## A Record untuk Mail Server (Opsional)
-```
-Type: A
-Name: mail
-Value: [IP_PUBLIC_SERVER_ANDA]
-TTL: 3600
-```
-
-**Contoh:**
-```
 Type: A
 Name: mail
 Value: 192.168.1.100
