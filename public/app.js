@@ -28,7 +28,7 @@ const composeBtn = document.getElementById('composeBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const currentEmailInput = document.getElementById('currentEmail');
 const customUsernameInput = document.getElementById('customUsername');
-const domainNameSpan = document.getElementById('domainName');
+const domainSelect = document.getElementById('domainSelect');
 const availabilityMessage = document.getElementById('availabilityMessage');
 const emailList = document.getElementById('emailList');
 const emailCount = document.getElementById('emailCount');
@@ -81,15 +81,21 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// Get domain name from server
+// Get domain list from server
 fetch(`${API_URL}/stats`)
     .then(res => res.json())
     .then(data => {
-        if (data.success && data.config.domain) {
-            domainNameSpan.textContent = data.config.domain;
+        if (data.success && data.config.domains) {
+            domainSelect.innerHTML = '';
+            data.config.domains.forEach(domain => {
+                const opt = document.createElement('option');
+                opt.value = domain;
+                opt.textContent = domain;
+                domainSelect.appendChild(opt);
+            });
         }
     })
-    .catch(err => console.error('Error fetching domain:', err));
+    .catch(err => console.error('Error fetching domains:', err));
 
 // Generate email baru
 generateBtn.addEventListener('click', async () => {
@@ -125,14 +131,16 @@ generateBtn.addEventListener('click', async () => {
 });
 
 // Custom email username input - check availability
-customUsernameInput.addEventListener('input', () => {
+customUsernameInput.addEventListener('input', checkCustomEmailAvailability);
+domainSelect.addEventListener('change', checkCustomEmailAvailability);
+
+function checkCustomEmailAvailability() {
     const username = customUsernameInput.value.trim();
-    
+    const domain = domainSelect.value;
     // Clear previous timeout
     if (checkTimeout) {
         clearTimeout(checkTimeout);
     }
-    
     // Reset state if empty
     if (!username) {
         availabilityMessage.textContent = '';
@@ -141,19 +149,16 @@ customUsernameInput.addEventListener('input', () => {
         accessBtn.disabled = true;
         return;
     }
-    
     // Show checking state
     availabilityMessage.textContent = 'Mengecek ketersediaan...';
     availabilityMessage.className = 'availability-message checking';
     createBtn.disabled = true;
     accessBtn.disabled = true;
-    
     // Debounce check
     checkTimeout = setTimeout(async () => {
         try {
-            const response = await fetch(`${API_URL}/check/${encodeURIComponent(username)}`);
+            const response = await fetch(`${API_URL}/check/${encodeURIComponent(username)}/${encodeURIComponent(domain)}`);
             const data = await response.json();
-            
             if (data.success) {
                 if (data.available) {
                     availabilityMessage.textContent = '✓ Email tersedia - Buat baru';
@@ -180,48 +185,39 @@ customUsernameInput.addEventListener('input', () => {
             accessBtn.disabled = true;
         }
     }, 500);
-});
+}
 
 // Access existing email inbox
 accessBtn.addEventListener('click', async () => {
     const username = customUsernameInput.value.trim();
-    
+    const domain = domainSelect.value;
     if (!username) {
         showNotification('Username harus diisi', 'error');
         return;
     }
-    
     try {
         accessBtn.disabled = true;
         accessBtn.textContent = '⏳ Membuka...';
-        
-        const email = `${username.toLowerCase()}@${domainNameSpan.textContent}`;
-        
+        const email = `${username.toLowerCase()}@${domain}`;
         // Check if email exists and get inbox
         const response = await fetch(`${API_URL}/emails/${encodeURIComponent(email)}`);
         const data = await response.json();
-        
         if (data.success) {
             currentEmail = email;
             currentEmailInput.value = currentEmail;
             copyBtn.disabled = false;
             composeBtn.disabled = false;
-            
             // Display emails
             displayEmails(data.emails);
             emailCount.textContent = `(${data.count})`;
-            
             // Switch to random tab to show the inbox
             document.querySelector('.tab-btn[data-tab="random"]').click();
-            
             // Start auto-refresh
             startAutoRefresh();
-            
             // Reset custom form
             customUsernameInput.value = '';
             availabilityMessage.textContent = '';
             availabilityMessage.className = 'availability-message';
-            
             showNotification(`Inbox dibuka: ${email}`, 'success');
         } else {
             showNotification('Email tidak ditemukan', 'error');
@@ -238,47 +234,38 @@ accessBtn.addEventListener('click', async () => {
 // Create custom email
 createBtn.addEventListener('click', async () => {
     const username = customUsernameInput.value.trim();
-    
+    const domain = domainSelect.value;
     if (!username) {
         showNotification('Username harus diisi', 'error');
         return;
     }
-    
     try {
         createBtn.disabled = true;
         createBtn.textContent = '⏳ Membuat...';
-        
         const response = await fetch(`${API_URL}/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username })
+            body: JSON.stringify({ username, domain })
         });
-        
         const data = await response.json();
-        
         if (data.success) {
             currentEmail = data.email;
             currentEmailInput.value = currentEmail;
             copyBtn.disabled = false;
             composeBtn.disabled = false;
-            
             // Clear inbox
             emailList.innerHTML = '<div class="empty-state"><p>📭 Belum ada email</p><p class="small">Menunggu email masuk...</p></div>';
             emailCount.textContent = '(0)';
-            
             // Switch to random tab to show the created email
             document.querySelector('.tab-btn[data-tab="random"]').click();
-            
             // Start auto-refresh
             startAutoRefresh();
-            
             // Reset custom form
             customUsernameInput.value = '';
             availabilityMessage.textContent = '';
             availabilityMessage.className = 'availability-message';
-            
             showNotification('Email custom berhasil dibuat!', 'success');
         } else {
             showNotification(data.message || 'Gagal membuat email', 'error');

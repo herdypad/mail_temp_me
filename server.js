@@ -9,7 +9,7 @@ const fs = require('fs');
 const app = express();
 const HTTP_PORT = process.env.HTTP_PORT || 3000;
 const SMTP_PORT = process.env.SMTP_PORT || 2525;
-const DOMAIN = process.env.DOMAIN || 'temp-mail.local';
+const DOMAINS = process.env.DOMAINS ? process.env.DOMAINS.split(',') : ['temp-mail.local'];
 const EMAIL_RETENTION_HOURS = parseInt(process.env.EMAIL_RETENTION_HOURS) || 24;
 const MAX_EMAIL_SIZE = parseInt(process.env.MAX_EMAIL_SIZE) || 10485760;
 
@@ -35,7 +35,9 @@ function generateRandomEmail() {
   for (let i = 0; i < 10; i++) {
     username += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `${username}@${DOMAIN}`;
+  // Pilih domain random dari DOMAINS
+  const domain = DOMAINS[Math.floor(Math.random() * DOMAINS.length)].trim();
+  return `${username}@${domain}`;
 }
 
 // Validate email username format
@@ -114,36 +116,38 @@ app.get('/api/generate', (req, res) => {
 
 // Create email with custom username
 app.post('/api/create', express.json(), (req, res) => {
-  const { username } = req.body;
-  
+  const { username, domain } = req.body;
   if (!username) {
     return res.status(400).json({
       success: false,
       message: 'Username harus diisi'
     });
   }
-  
   if (!isValidUsername(username)) {
     return res.status(400).json({
       success: false,
       message: 'Username harus 3-30 karakter, hanya huruf, angka, titik, dash, atau underscore'
     });
   }
-  
-  const email = `${username.toLowerCase()}@${DOMAIN}`;
-  
+  // Validasi domain
+  const selectedDomain = domain ? domain.trim() : DOMAINS[0];
+  if (!DOMAINS.includes(selectedDomain)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Domain tidak didukung'
+    });
+  }
+  const email = `${username.toLowerCase()}@${selectedDomain}`;
   if (!isEmailAvailable(email)) {
     return res.status(409).json({
       success: false,
       message: 'Email sudah digunakan, pilih username lain'
     });
   }
-  
   emailBoxes.set(email, {
     emails: [],
     timestamp: Date.now()
   });
-  
   res.json({
     success: true,
     email: email,
@@ -153,9 +157,10 @@ app.post('/api/create', express.json(), (req, res) => {
 });
 
 // Check email availability
-app.get('/api/check/:username', (req, res) => {
+// Cek ketersediaan email dengan username dan domain
+app.get('/api/check/:username/:domain', (req, res) => {
   const username = req.params.username;
-  
+  const domain = req.params.domain;
   if (!isValidUsername(username)) {
     return res.json({
       success: false,
@@ -163,10 +168,15 @@ app.get('/api/check/:username', (req, res) => {
       message: 'Format username tidak valid'
     });
   }
-  
-  const email = `${username.toLowerCase()}@${DOMAIN}`;
+  if (!DOMAINS.includes(domain)) {
+    return res.json({
+      success: false,
+      available: false,
+      message: 'Domain tidak didukung'
+    });
+  }
+  const email = `${username.toLowerCase()}@${domain}`;
   const available = isEmailAvailable(email);
-  
   res.json({
     success: true,
     available: available,
@@ -182,7 +192,7 @@ app.get('/api/stats', (req, res) => {
     success: true,
     stats: stats,
     config: {
-      domain: DOMAIN,
+      domains: DOMAINS,
       retentionHours: EMAIL_RETENTION_HOURS,
       maxEmailSize: MAX_EMAIL_SIZE
     }
@@ -376,7 +386,7 @@ app.post('/api/send', express.json(), async (req, res) => {
 const smtpServer = new SMTPServer({
   authOptional: true,
   disabledCommands: ['AUTH'],
-  banner: `${DOMAIN} Temporary Email Server`,
+  banner: `${DOMAINS.join(', ')} Temporary Email Server`,
   size: MAX_EMAIL_SIZE,
   onData(stream, session, callback) {
     simpleParser(stream, async (err, parsed) => {
@@ -450,7 +460,7 @@ app.listen(HTTP_PORT, () => {
   console.log('═══════════════════════════════════════════════');
   console.log('✓ HTTP Server berjalan di http://localhost:' + HTTP_PORT);
   console.log('✓ SMTP Server berjalan di port ' + SMTP_PORT);
-  console.log('✓ Domain: ' + DOMAIN);
+  console.log('✓ Domains: ' + DOMAINS.join(', '));
   console.log('✓ Email retention: ' + EMAIL_RETENTION_HOURS + ' jam');
   console.log('✓ Environment: ' + (process.env.NODE_ENV || 'development'));
   console.log('═══════════════════════════════════════════════');
