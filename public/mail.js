@@ -146,7 +146,7 @@ async function init() {
         // Get domain from server and save as default domain
         const statsResponse = await fetch(`${API_URL}/stats`);
         const statsData = await statsResponse.json();
-        defaultDomain = statsData.success ? statsData.config.domain : 'temp-mail.local';
+        defaultDomain = statsData.success && statsData.config.domains ? statsData.config.domains[0] : 'temp-mail.local';
 
         currentEmail = `${username.toLowerCase()}@${defaultDomain}`;
         emailAddressSpan.textContent = currentEmail;
