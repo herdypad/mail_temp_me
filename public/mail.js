@@ -3,6 +3,7 @@ let currentEmail = null;
 let refreshInterval = null;
 let isLoading = false;
 let lastEmailIds = new Set(); // Track email IDs we've already seen
+let defaultDomain = 'temp-mail.local';
 
 // Sound notification untuk email baru
 function playNotificationSound() {
@@ -47,9 +48,9 @@ function playNotificationSound() {
     }
 }
 
-// Get username from URL path
-const pathParts = window.location.pathname.split('/');
-const username = pathParts[pathParts.length - 1];
+// Get username from URL path (last non-empty segment)
+const pathParts = window.location.pathname.split('/').filter(Boolean);
+const username = pathParts.length > 0 ? pathParts[pathParts.length - 1] : '';
 
 // LocalStorage key for this inbox
 const STORAGE_KEY = `inbox_${username}`;
@@ -105,6 +106,17 @@ const emailDetail = document.getElementById('emailDetail');
 const composeModal = document.getElementById('composeModal');
 const closeComposeModal = document.querySelector('.close-compose');
 const composeForm = document.getElementById('composeForm');
+const composeToInput = document.getElementById('composeTo');
+
+// Jika pengguna mengetik tanpa '@', tambahkan domain utama saat blur
+if (composeToInput) {
+    composeToInput.addEventListener('blur', () => {
+        let v = composeToInput.value.trim();
+        if (v && !v.includes('@')) {
+            composeToInput.value = `${v}@${defaultDomain}`;
+        }
+    });
+}
 
 // Loading state
 function showLoading() {
@@ -131,12 +143,12 @@ async function init() {
     }
 
     try {
-        // Get domain from server
+        // Get domain from server and save as default domain
         const statsResponse = await fetch(`${API_URL}/stats`);
         const statsData = await statsResponse.json();
-        const domain = statsData.success ? statsData.config.domain : 'temp-mail.local';
+        defaultDomain = statsData.success ? statsData.config.domain : 'temp-mail.local';
 
-        currentEmail = `${username.toLowerCase()}@${domain}`;
+        currentEmail = `${username.toLowerCase()}@${defaultDomain}`;
         emailAddressSpan.textContent = currentEmail;
         document.getElementById('composeFrom').value = currentEmail;
 
@@ -405,6 +417,11 @@ composeForm.addEventListener('submit', async (e) => {
     const subject = document.getElementById('composeSubject').value;
     const message = document.getElementById('composeMessage').value;
 
+    // If user entered a local part only (no @), append default domain
+    let toAddress = to.trim();
+    if (toAddress && !toAddress.includes('@')) {
+        toAddress = `${toAddress}@${defaultDomain}`;
+    }
     try {
         const btnSend = composeForm.querySelector('.btn-send');
         btnSend.disabled = true;
@@ -417,7 +434,7 @@ composeForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 from: from,
-                to: to,
+                to: toAddress,
                 subject: subject,
                 message: message
             })
