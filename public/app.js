@@ -18,6 +18,7 @@ let currentEmail = null;
 let refreshInterval = null;
 let checkTimeout = null;
 let isLoading = false;
+let availableDomains = [];
 
 // Elements
 const generateBtn = document.getElementById('generateBtn');
@@ -28,6 +29,7 @@ const composeBtn = document.getElementById('composeBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const currentEmailInput = document.getElementById('currentEmail');
 const customEmailInput = document.getElementById('customEmail');
+const randomDomainSelect = document.getElementById('randomDomainSelect');
 const availabilityMessage = document.getElementById('availabilityMessage');
 const emailList = document.getElementById('emailList');
 const emailCount = document.getElementById('emailCount');
@@ -62,6 +64,37 @@ const composeToInput = document.getElementById('composeTo');
 const composeSubjectInput = document.getElementById('composeSubject');
 const composeMessageInput = document.getElementById('composeMessage');
 const btnCancel = document.querySelector('.btn-cancel');
+
+// Load available domains
+async function loadDomains() {
+    try {
+        const response = await fetch(`${API_URL}/domains`);
+        const data = await response.json();
+        if (data.success && data.domains && data.domains.length > 0) {
+            availableDomains = data.domains;
+            populateDomainSelectors();
+        }
+    } catch (error) {
+        console.error('Error loading domains:', error);
+    }
+}
+
+function populateDomainSelectors() {
+    // Clear and populate random domain select
+    randomDomainSelect.innerHTML = '';
+    availableDomains.forEach(domain => {
+        const option = document.createElement('option');
+        option.value = domain;
+        option.textContent = domain;
+        randomDomainSelect.appendChild(option);
+    });
+    if (availableDomains.length > 0) {
+        randomDomainSelect.value = availableDomains[0];
+    }
+}
+
+// Load domains on page load
+loadDomains();
 
 // Tab switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -134,27 +167,17 @@ function checkCustomEmailAvailability() {
     }
     
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[a-zA-Z0-9._-]{3,30}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-        availabilityMessage.textContent = 'Format email tidak valid';
+        availabilityMessage.textContent = 'Format email tidak valid (username@domain.com)';
         availabilityMessage.className = 'availability-message error';
         createBtn.disabled = true;
         accessBtn.disabled = true;
         return;
     }
     
-    // Parse username and domain
+    // Parse email to get username and domain
     const [username, domain] = email.split('@');
-    
-    // Validate username format
-    const usernameRegex = /^[a-zA-Z0-9._-]{3,30}$/;
-    if (!usernameRegex.test(username)) {
-        availabilityMessage.textContent = 'Username harus 3-30 karakter, hanya huruf, angka, titik, dash, atau underscore';
-        availabilityMessage.className = 'availability-message error';
-        createBtn.disabled = true;
-        accessBtn.disabled = true;
-        return;
-    }
     
     // Show checking state
     availabilityMessage.textContent = 'Mengecek ketersediaan...';
@@ -169,18 +192,18 @@ function checkCustomEmailAvailability() {
             const data = await response.json();
             if (data.success) {
                 if (data.available) {
-                    availabilityMessage.textContent = '✓ Email tersedia - Buat baru';
+                    availabilityMessage.textContent = `✓ ${data.email} tersedia`;
                     availabilityMessage.className = 'availability-message available';
                     createBtn.disabled = false;
                     accessBtn.disabled = true;
                 } else {
-                    availabilityMessage.textContent = '✓ Email ditemukan - Buka inbox';
+                    availabilityMessage.textContent = `✓ ${data.email} ditemukan`;
                     availabilityMessage.className = 'availability-message unavailable';
                     createBtn.disabled = true;
                     accessBtn.disabled = false;
                 }
             } else {
-                availabilityMessage.textContent = data.message || 'Domain tidak valid';
+                availabilityMessage.textContent = data.message || 'Gagal mengecek email';
                 availabilityMessage.className = 'availability-message error';
                 createBtn.disabled = true;
                 accessBtn.disabled = true;
@@ -199,17 +222,12 @@ function checkCustomEmailAvailability() {
 accessBtn.addEventListener('click', async () => {
     const email = customEmailInput.value.trim();
     
-    if (!email) {
-        showNotification('Email harus diisi', 'error');
+    if (!email || !email.includes('@')) {
+        showNotification('Email tidak valid', 'error');
         return;
     }
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showNotification('Format email tidak valid', 'error');
-        return;
-    }
+    const [username, domain] = email.split('@');
     
     try {
         accessBtn.disabled = true;
@@ -257,19 +275,11 @@ accessBtn.addEventListener('click', async () => {
 createBtn.addEventListener('click', async () => {
     const email = customEmailInput.value.trim();
     
-    if (!email) {
-        showNotification('Email harus diisi', 'error');
+    if (!email || !email.includes('@')) {
+        showNotification('Email tidak valid', 'error');
         return;
     }
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showNotification('Format email tidak valid', 'error');
-        return;
-    }
-    
-    // Parse username and domain
     const [username, domain] = email.split('@');
     
     try {

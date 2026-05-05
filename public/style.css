@@ -114,24 +114,52 @@ header p {
 
 .btn-generate {
     width: 100%;
-    padding: 15px;
-    background: #667eea;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: bold;
-    transition: background 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-generate::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-generate:hover::before {
+    width: 400px;
+    height: 400px;
 }
 
 .btn-generate:hover:not(:disabled) {
-    background: #5568d3;
+    background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .btn-generate:disabled {
     background: #cccccc;
     cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-generate:disabled::before {
+    display: none;
 }
 
 .info {
@@ -144,54 +172,184 @@ header p {
 .custom-email-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+    padding: 25px;
+    border-radius: 12px;
+    border: 2px solid #e8eaf6;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.08);
+}
+
+/* Domain selector wrapper for random email tab */
+.domain-selector {
+    margin-bottom: 15px;
+}
+
+.domain-selector label {
+    display: block;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+}
+
+.domain-selector select {
+    width: 100%;
 }
 
 .custom-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 5px;
 }
 
 .btn-custom {
     padding: 15px;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 1rem;
     font-weight: bold;
-    transition: background 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-custom::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-custom:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 #createBtn {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 #createBtn:hover:not(:disabled) {
-    background: #5568d3;
+    background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 #accessBtn {
-    background: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
 }
 
 #accessBtn:hover:not(:disabled) {
-    background: #45a049;
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .btn-custom:disabled {
     background: #cccccc;
     cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-custom:disabled::before {
+    display: none;
 }
 
 .input-group {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+    padding: 8px;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
 }
 
-/* Custom email input: match style of #currentEmail */
+.input-group:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.input-group:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.input-group label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #667eea;
+    padding: 0 5px;
+}
+
+/* Custom email input: username field */
+#customUsername {
+    flex: 1;
+    padding: 12px 15px;
+    font-size: 1.1rem;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    outline: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#customUsername:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+#customUsername::placeholder {
+    color: #a0aec0;
+    font-weight: 400;
+}
+
+/* Domain selectors styling */
+#customDomainSelect,
+#randomDomainSelect {
+    padding: 12px 35px 12px 15px;
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    color: #667eea;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 18px;
+    transition: all 0.2s ease;
+}
+
+#customDomainSelect:hover,
+#randomDomainSelect:hover {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+#customDomainSelect:focus,
+#randomDomainSelect:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+}
+
 #customEmail {
     flex: 1;
     padding: 15px;
@@ -215,29 +373,47 @@ header p {
 .availability-message {
     min-height: 24px;
     font-size: 0.9rem;
-    padding: 8px 12px;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: 8px;
     text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .availability-message.available {
-    background: #e8f5e9;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
     color: #2e7d32;
+    border: 2px solid #81c784;
 }
 
 .availability-message.unavailable {
-    background: #ffebee;
-    color: #c62828;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    color: #e65100;
+    border: 2px solid #ffb74d;
 }
 
 .availability-message.checking {
-    background: #fff3e0;
-    color: #e65100;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1976d2;
+    border: 2px solid #64b5f6;
+    animation: pulse 1.5s ease-in-out infinite;
 }
 
 .availability-message.error {
-    background: #ffebee;
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
     color: #c62828;
+    border: 2px solid #ef5350;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
 /* Compose Modal */

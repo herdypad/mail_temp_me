@@ -29,12 +29,34 @@ const emailBoxes = new Map(); // { email: { emails: [], timestamp } }
 const pastes = new Map(); // { id: { title, content, createdAt, timestamp } }
 
 // Generate random email
-function generateRandomEmail() {
+async function generateRandomEmail() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let username = '';
-  for (let i = 0; i < 10; i++) {
-    username += chars.charAt(Math.floor(Math.random() * chars.length));
+
+  const fallbackUsername = () => {
+    let username = '';
+    for (let i = 0; i < 10; i++) {
+      username += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return username;
+  };
+
+  let username = fallbackUsername();
+
+  try {
+    const response = await fetch('https://randomuser.me/api/');
+    const data = await response.json();
+    const apiUsername = data?.results?.[0]?.login?.username;
+
+    if (typeof apiUsername === 'string' && apiUsername.trim()) {
+      const sanitized = apiUsername.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+      if (sanitized.length >= 3 && sanitized.length <= 30) {
+        username = sanitized;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch username from randomuser.me:', error.message);
   }
+
   // Pilih domain random dari DOMAINS
   const domain = DOMAINS[Math.floor(Math.random() * DOMAINS.length)].trim();
   return `${username}@${domain}`;
@@ -100,8 +122,8 @@ function getMemoryStats() {
 }
 
 // API Routes
-app.get('/api/generate', (req, res) => {
-  const email = generateRandomEmail();
+app.get('/api/generate', async (req, res) => {
+  const email = await generateRandomEmail();
   emailBoxes.set(email, {
     emails: [],
     timestamp: Date.now()
@@ -147,6 +169,15 @@ app.post('/api/create', express.json(), (req, res) => {
     email: email,
     expiresIn: `${EMAIL_RETENTION_HOURS} jam`,
     message: 'Email custom berhasil dibuat'
+  });
+});
+
+// Get available domains
+app.get('/api/domains', (req, res) => {
+  res.json({
+    success: true,
+    domains: DOMAINS,
+    message: 'List of available domains'
   });
 });
 

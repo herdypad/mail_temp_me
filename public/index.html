@@ -24,6 +24,12 @@
                     <input type="text" id="currentEmail" readonly placeholder="Klik tombol untuk generate email">
                     <button id="copyBtn" class="btn-copy" disabled>📋 Copy</button>
                 </div>
+                <div class="domain-selector">
+                    <label>Pilih Domain:</label>
+                    <select id="randomDomainSelect">
+                        <option value="">Loading domains...</option>
+                    </select>
+                </div>
                 <button id="generateBtn" class="btn-generate">🔄 Generate Email Random</button>
                 <p class="info">Email random otomatis dengan 10 karakter</p>
             </div>
@@ -31,14 +37,14 @@
             <div id="customTab" class="tab-content">
                 <div class="custom-email-form">
                     <div class="input-group">
-                        <input type="text" id="customEmail" placeholder="nama@domainapaaja.com" maxlength="100">
+                        <input type="email" id="customEmail" placeholder="username@anydomain.com" autocomplete="off">
                     </div>
                     <div id="availabilityMessage" class="availability-message"></div>
                     <div class="custom-actions">
                         <button id="createBtn" class="btn-custom" disabled>✨ Buat Baru</button>
                         <button id="accessBtn" class="btn-custom" disabled>🔓 Buka Inbox</button>
                     </div>
-                    <p class="info">Buat email dengan domain apa saja atau buka inbox yang sudah ada</p>
+                    <p class="info">Ketik email lengkap (username@domain.com) - bisa pakai domain apa saja</p>
                 </div>
             </div>
         </div>
