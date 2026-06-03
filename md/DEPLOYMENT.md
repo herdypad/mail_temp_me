@@ -2,6 +2,9 @@
 
 ## 📋 Quick Setup
 
+git clone https://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@github.com/herdypad/mail_temp_me.git
+
+
 ### 1. Environment Configuration
 
 Edit `.env` file dengan domain dan konfigurasi VPS Anda:

@@ -4,7 +4,7 @@
 
 Type: MX
 Name: @
-Value: mail.namaDomaim.com
+Value: mail.aniyahapp.my.id
 Priority: 10
 TTL: 3600
 
@@ -12,7 +12,7 @@ TTL: 3600
 
 Type: TXT
 Name: @
-Value: "v=spf1 ip4:8.215.48.142 -all"
+Value: "v=spf1 ip4:47.237.213.44 -all"
 TTL: 3600
 ```
 
@@ -21,7 +21,7 @@ TTL: 3600
 
 Type: A
 Name: mail
-Value: 192.168.1.100
+Value: 47.237.213.44
 TTL: 3600
 ```
 
@@ -30,7 +30,7 @@ TTL: 3600
 ### Test MX Record:
 ```bash
 nslookup -type=MX aniyahapp.my.id
-# Output yang benar: aniyahapp.my.id MX preference = 10, mail exchanger = 192.168.1.100
+# Output yang benar: aniyahapp.my.id MX preference = 10, mail exchanger = 8.215.48.142
 ```
 
 ### Test SPF Record:
