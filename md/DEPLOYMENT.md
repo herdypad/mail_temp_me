@@ -5,6 +5,11 @@
 git clone https://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@github.com/herdypad/mail_temp_me.git
 
 
+## Cara setup domain
+Type	Name	Value
+A	@	47.237.213.44
+A	www	47.237.213.44
+
 ### 1. Environment Configuration
 
 Edit `.env` file dengan domain dan konfigurasi VPS Anda:
