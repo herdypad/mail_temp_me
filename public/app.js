@@ -82,15 +82,18 @@ async function loadDomains() {
 function populateDomainSelectors() {
     // Clear and populate random domain select
     randomDomainSelect.innerHTML = '';
+    // Add random option first
+    const randomOption = document.createElement('option');
+    randomOption.value = 'random';
+    randomOption.textContent = '🎲 Random (acak)';
+    randomDomainSelect.appendChild(randomOption);
     availableDomains.forEach(domain => {
         const option = document.createElement('option');
         option.value = domain;
         option.textContent = domain;
         randomDomainSelect.appendChild(option);
     });
-    if (availableDomains.length > 0) {
-        randomDomainSelect.value = availableDomains[0];
-    }
+    randomDomainSelect.value = 'random';
 }
 
 // Load domains on page load
@@ -119,7 +122,11 @@ generateBtn.addEventListener('click', async () => {
         generateBtn.disabled = true;
         generateBtn.textContent = '⏳ Generating...';
         
-        const response = await fetch(`${API_URL}/generate`);
+        const selectedDomain = randomDomainSelect.value;
+        const url = selectedDomain && selectedDomain !== 'random'
+            ? `${API_URL}/generate?domain=${encodeURIComponent(selectedDomain)}`
+            : `${API_URL}/generate`;
+        const response = await fetch(url);
         const data = await response.json();
         
         if (data.success) {
@@ -142,7 +149,7 @@ generateBtn.addEventListener('click', async () => {
         showNotification('Gagal membuat email', 'error');
     } finally {
         generateBtn.disabled = false;
-        generateBtn.textContent = '🔄 Generate Email Baru';
+        generateBtn.textContent = '🔄 Generate Email Random';
     }
 });
 

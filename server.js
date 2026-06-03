@@ -123,7 +123,32 @@ function getMemoryStats() {
 
 // API Routes
 app.get('/api/generate', async (req, res) => {
-  const email = await generateRandomEmail();
+  let email;
+  const requestedDomain = req.query.domain;
+  if (requestedDomain && DOMAINS.map(d => d.trim()).includes(requestedDomain.trim())) {
+    // Generate with specified domain
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let username = '';
+    for (let i = 0; i < 10; i++) {
+      username += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    try {
+      const response = await fetch('https://randomuser.me/api/');
+      const data = await response.json();
+      const apiUsername = data?.results?.[0]?.login?.username;
+      if (typeof apiUsername === 'string' && apiUsername.trim()) {
+        const sanitized = apiUsername.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+        if (sanitized.length >= 3 && sanitized.length <= 30) {
+          username = sanitized;
+        }
+      }
+    } catch (err) {
+      // use fallback username
+    }
+    email = `${username}@${requestedDomain.trim()}`;
+  } else {
+    email = await generateRandomEmail();
+  }
   emailBoxes.set(email, {
     emails: [],
     timestamp: Date.now()
