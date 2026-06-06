@@ -25,7 +25,7 @@ Value: 47.237.213.44
 TTL: 3600
 ```
 
-## Testing untuk Kedua Domain:
+## Testing untuk Kedua Domain cara cek di terminal:
 
 ### Test MX Record:
 ```bash
