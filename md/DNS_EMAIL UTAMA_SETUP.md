@@ -16,8 +16,7 @@ Value: "v=spf1 ip4:47.237.213.44 -all"
 TTL: 3600
 ```
 
-
-## A Record untuk Mail Server (Wajib)
+## A Record untuk Mail Server (WAJIB)
 
 Type: A
 Name: mail
