@@ -13,6 +13,69 @@ const DOMAINS = process.env.DOMAINS ? process.env.DOMAINS.split(',') : ['temp-ma
 const EMAIL_RETENTION_HOURS = parseInt(process.env.EMAIL_RETENTION_HOURS) || 24;
 const MAX_EMAIL_SIZE = parseInt(process.env.MAX_EMAIL_SIZE) || 10485760;
 
+// ==================== PENYIMPANAN FILE .TXT ====================
+// Semua data disimpan di folder ./data sebagai file .txt (format: 1 JSON object per baris)
+// Ini membuat data tetap ada walau server di-restart.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const EMAILBOXES_FILE = path.join(DATA_DIR, 'emailboxes.txt');
+const EMAILS_FILE = path.join(DATA_DIR, 'emails.txt');
+const PASTES_FILE = path.join(DATA_DIR, 'pastes.txt');
+
+// Pastikan folder data ada
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  console.log(`✓ Folder data dibuat: ${DATA_DIR}`);
+}
+
+// Baca file .txt (format JSON per baris) menjadi Map
+function loadMapFromTxt(filePath, keyField) {
+  const map = new Map();
+  if (!fs.existsSync(filePath)) return map;
+
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const lines = raw.split('\n').filter(line => line.trim() !== '');
+    for (const line of lines) {
+      try {
+        const obj = JSON.parse(line);
+        map.set(obj[keyField], obj.value);
+      } catch (e) {
+        console.error(`Baris rusak dilewati di ${filePath}:`, e.message);
+      }
+    }
+  } catch (e) {
+    console.error(`Gagal membaca ${filePath}:`, e.message);
+  }
+  return map;
+}
+
+// Tulis seluruh isi Map ke file .txt (1 JSON object per baris)
+function saveMapToTxt(filePath, map, keyField) {
+  try {
+    const lines = [];
+    for (const [key, value] of map.entries()) {
+      lines.push(JSON.stringify({ [keyField]: key, value }));
+    }
+    fs.writeFileSync(filePath, lines.join('\n') + (lines.length ? '\n' : ''), 'utf-8');
+  } catch (e) {
+    console.error(`Gagal menulis ${filePath}:`, e.message);
+  }
+}
+
+// Storage utama (tetap pakai Map di memory untuk kecepatan akses,
+// tapi setiap perubahan langsung ditulis ulang ke file .txt)
+const emails = loadMapFromTxt(EMAILS_FILE, 'id');           // { id: { data, timestamp } }
+const emailBoxes = loadMapFromTxt(EMAILBOXES_FILE, 'email'); // { email: { emails: [], timestamp } }
+const pastes = loadMapFromTxt(PASTES_FILE, 'id');            // { id: { title, content, createdAt, timestamp } }
+
+console.log(`✓ Dimuat dari file: ${emails.size} email, ${emailBoxes.size} inbox, ${pastes.size} paste`);
+
+// Helper simpan cepat, dipanggil tiap kali ada perubahan data
+function persistEmails() { saveMapToTxt(EMAILS_FILE, emails, 'id'); }
+function persistEmailBoxes() { saveMapToTxt(EMAILBOXES_FILE, emailBoxes, 'email'); }
+function persistPastes() { saveMapToTxt(PASTES_FILE, pastes, 'id'); }
+// ==================== END PENYIMPANAN FILE .TXT ====================
+
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'];
 app.use(cors({
@@ -20,13 +83,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.static('public'));
-
-// Storage untuk email dengan TTL (Time To Live)
-const emails = new Map(); // { id: { data, timestamp } }
-const emailBoxes = new Map(); // { email: { emails: [], timestamp } }
-
-// Storage untuk paste dengan TTL
-const pastes = new Map(); // { id: { title, content, createdAt, timestamp } }
 
 // Generate random email
 async function generateRandomEmail() {
@@ -78,30 +134,41 @@ function isEmailAvailable(email) {
 function cleanupExpiredEmails() {
   const now = Date.now();
   const retentionMs = EMAIL_RETENTION_HOURS * 60 * 60 * 1000;
-  
+  let changedBoxes = false;
+  let changedEmails = false;
+  let changedPastes = false;
+
   // Cleanup email boxes
   for (const [email, data] of emailBoxes.entries()) {
     if (now - data.timestamp > retentionMs) {
       emailBoxes.delete(email);
+      changedBoxes = true;
       console.log(`Deleted expired email box: ${email}`);
     }
   }
-  
+
   // Cleanup individual emails
   for (const [id, data] of emails.entries()) {
     if (now - data.timestamp > retentionMs) {
       emails.delete(id);
+      changedEmails = true;
     }
   }
-  
+
   // Cleanup pastes
   for (const [id, data] of pastes.entries()) {
     if (now - data.timestamp > retentionMs) {
       pastes.delete(id);
+      changedPastes = true;
       console.log(`Deleted expired paste: ${id}`);
     }
   }
-  
+
+  // Tulis ulang file .txt hanya jika ada perubahan
+  if (changedBoxes) persistEmailBoxes();
+  if (changedEmails) persistEmails();
+  if (changedPastes) persistPastes();
+
   console.log(`Cleanup completed. Active emails: ${emails.size}, Active boxes: ${emailBoxes.size}, Active pastes: ${pastes.size}`);
 }
 
@@ -120,16 +187,6 @@ function getMemoryStats() {
     pasteCount: pastes.size
   };
 }
-
-app.get('/api/admin/emails', (req, res) => {
-  const list = Array.from(emailBoxes.entries()).map(([email, data]) => ({
-    email,
-    emailCount: data.emails.length,
-    createdAt: new Date(data.timestamp),
-    expiresAt: new Date(data.timestamp + EMAIL_RETENTION_HOURS * 60 * 60 * 1000)
-  }));
-  res.json({ success: true, total: list.length, emails: list });
-});
 
 // API Routes
 app.get('/api/generate', async (req, res) => {
@@ -163,6 +220,7 @@ app.get('/api/generate', async (req, res) => {
     emails: [],
     timestamp: Date.now()
   });
+  persistEmailBoxes();
   res.json({ 
     success: true, 
     email: email,
@@ -199,6 +257,7 @@ app.post('/api/create', express.json(), (req, res) => {
     emails: [],
     timestamp: Date.now()
   });
+  persistEmailBoxes();
   res.json({
     success: true,
     email: email,
@@ -217,7 +276,6 @@ app.get('/api/domains', (req, res) => {
 });
 
 // Check email availability
-// Cek ketersediaan email dengan username dan domain
 app.get('/api/check/:username/:domain', (req, res) => {
   const username = req.params.username;
   const domain = req.params.domain;
@@ -249,6 +307,21 @@ app.get('/api/stats', (req, res) => {
       retentionHours: EMAIL_RETENTION_HOURS,
       maxEmailSize: MAX_EMAIL_SIZE
     }
+  });
+});
+
+// Endpoint baru: lihat daftar SEMUA email box yang pernah dibuat (dibaca langsung dari data di memory / file .txt)
+app.get('/api/admin/list', (req, res) => {
+  const list = Array.from(emailBoxes.entries()).map(([email, data]) => ({
+    email,
+    emailCount: data.emails.length,
+    createdAt: new Date(data.timestamp),
+    expiresAt: new Date(data.timestamp + EMAIL_RETENTION_HOURS * 60 * 60 * 1000)
+  }));
+  res.json({
+    success: true,
+    total: list.length,
+    emails: list
   });
 });
 
@@ -286,6 +359,7 @@ app.get('/api/email/:id', (req, res) => {
 app.delete('/api/emails/:emailAddress', (req, res) => {
   const emailAddress = req.params.emailAddress.toLowerCase();
   emailBoxes.delete(emailAddress);
+  persistEmailBoxes();
   res.json({ 
     success: true, 
     message: 'Semua email berhasil dihapus' 
@@ -316,6 +390,7 @@ app.post('/api/paste/create', express.json(), (req, res) => {
   };
   
   pastes.set(pasteId, pasteData);
+  persistPastes();
   
   console.log(`Paste created: ${pasteId} - ${pasteData.title}`);
   
@@ -400,6 +475,7 @@ app.post('/api/send', express.json(), async (req, res) => {
       data: emailData,
       timestamp: Date.now()
     });
+    persistEmails();
     
     // Tambahkan ke inbox recipient
     const recipient = to.toLowerCase();
@@ -417,6 +493,7 @@ app.post('/api/send', express.json(), async (req, res) => {
       date: new Date(),
       preview: message.substring(0, 100)
     });
+    persistEmailBoxes();
     
     console.log(`Email sent from ${from} to ${to}`);
     console.log(`Subject: ${subject}`);
@@ -473,6 +550,7 @@ const smtpServer = new SMTPServer({
         data: emailData,
         timestamp: Date.now()
       });
+      persistEmails();
 
       // Tambahkan ke inbox setiap recipient
       recipients.forEach(recipient => {
@@ -496,6 +574,7 @@ const smtpServer = new SMTPServer({
         console.log(`        Preview: ${emailData.text ? emailData.text.substring(0, 100) : ''}`);
         console.log(`        Tanggal: ${emailData.date}`);
       });
+      persistEmailBoxes();
 
       console.log(`Email diterima untuk: ${recipients.join(', ')}`);
       console.log(`Subject: ${emailData.subject}`);
@@ -515,6 +594,7 @@ app.listen(HTTP_PORT, () => {
   console.log('✓ SMTP Server berjalan di port ' + SMTP_PORT);
   console.log('✓ Domains: ' + DOMAINS.join(', '));
   console.log('✓ Email retention: ' + EMAIL_RETENTION_HOURS + ' jam');
+  console.log('✓ Data disimpan di: ' + DATA_DIR);
   console.log('✓ Environment: ' + (process.env.NODE_ENV || 'development'));
   console.log('═══════════════════════════════════════════════');
 });
@@ -523,8 +603,19 @@ smtpServer.listen(SMTP_PORT, '0.0.0.0', () => {
   console.log('✓ SMTP Server siap menerima email');
 });
 
-// Graceful shutdown
+// Graceful shutdown — pastikan data tersimpan sebelum keluar
 process.on('SIGTERM', () => {
+  persistEmailBoxes();
+  persistEmails();
+  persistPastes();
+  smtpServer.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  persistEmailBoxes();
+  persistEmails();
+  persistPastes();
   smtpServer.close();
   process.exit(0);
 });
