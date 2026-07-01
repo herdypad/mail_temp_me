@@ -188,6 +188,17 @@ function getMemoryStats() {
   };
 }
 
+// Endpoint admin untuk list semua email box (sebaiknya diproteksi API key)
+app.get('/api/admin/emails', (req, res) => {
+  const list = Array.from(emailBoxes.entries()).map(([email, data]) => ({
+    email,
+    emailCount: data.emails.length,
+    createdAt: new Date(data.timestamp),
+    expiresAt: new Date(data.timestamp + EMAIL_RETENTION_HOURS * 60 * 60 * 1000)
+  }));
+  res.json({ success: true, total: list.length, emails: list });
+});
+
 // API Routes
 app.get('/api/generate', async (req, res) => {
   let email;
