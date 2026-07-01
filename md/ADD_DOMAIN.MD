@@ -19,3 +19,11 @@ Type: TXT
 Name: @
 Value: "v=spf1 ip4:47.237.213.44 -all"
 TTL: 3600
+
+## 3 MX Record (WAJIB)
+
+Type: MX
+Name: @
+Value: mail.aniyahapp.my.id
+Priority: 10
+TTL: 3600
