@@ -11,7 +11,7 @@
 #    sudo ./deploy.sh
 #
 #  Atau dengan custom domain:
-#    sudo ./deploy.sh yourdomain.com
+#    sudo ./deploy.sh aniyahapp.my.id
 #
 # =============================================================
 
